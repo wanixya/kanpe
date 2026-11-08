@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="2台カンペ">
+<meta name="theme-color" content="#000000">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>2台カンペ</title>
+<style>
+:root{
+  --bg:#000;--ink:#f2f2f2;--muted:#8c8c8c;--panel:#161616;--rule:#333;
+  --zone:rgba(255,255,255,.06);--flash:rgba(255,255,255,.16);
+  --s0:#6b6f75;--s1:#2f6fdc;--s2:#1f8a4c;--s3:#a8740f;--s4:#7a4fd0;--s5:#c8323f;--s6:#0e8a96;
+  --fs:40px;
+  color-scheme:dark;
+}
+:root[data-theme="light"]{
+  --bg:#fff;--ink:#111;--muted:#8a8a8a;--panel:#f1f1f1;--rule:#ccc;
+  --zone:rgba(0,0,0,.05);--flash:rgba(0,0,0,.13);
+  color-scheme:light;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hidden;overscroll-behavior:none}
+body{
+  font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","Yu Gothic","Meiryo",sans-serif;
+  -webkit-text-size-adjust:100%;-webkit-user-select:none;user-select:none;
+  -webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation;
+}
+#app{
+  position:fixed;inset:0;display:flex;flex-direction:column;cursor:pointer;
+  padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);
+}
+#zoneBack{position:fixed;left:0;top:0;bottom:0;width:15%;background:var(--zone);pointer-events:none;z-index:1}
+#zoneBack.flash,#zoneFwd.flash{background:var(--flash)}
+#zoneFwd{position:fixed;right:0;top:0;bottom:0;left:15%;pointer-events:none;z-index:1}
+#band{
+  flex:none;height:32px;display:flex;align-items:center;gap:8px;padding:0 6px;
+  border-bottom:3px solid var(--c,var(--s0));font-size:15px;position:relative;z-index:2;
+}
+#band .stg{background:var(--c,var(--s0));color:#fff;font-weight:700;padding:0 8px;height:22px;line-height:22px;border-radius:4px;white-space:nowrap}
+#band .sec{flex:1;min-width:0;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#band .num{font-size:27px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1;white-space:nowrap}
+#band .num small{font-size:12px;font-weight:400;color:var(--muted);margin-left:2px}
+.mini{
+  flex:none;border:1px solid var(--rule);background:transparent;color:var(--muted);
+  font:inherit;font-size:11px;height:24px;padding:0 7px;border-radius:6px;cursor:pointer;
+}
+#page{flex:1;position:relative;overflow:hidden;padding:2px 10px 0;z-index:2;pointer-events:none}
+#rows{font-size:var(--fs);line-height:1.25}
+.row{white-space:nowrap;font-weight:600;overflow:hidden}
+.row.note{color:var(--muted);font-weight:400}
+.blank{height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:.4em}
+.blank .nx{font-weight:700;color:var(--c,var(--ink))}
+.blank .up{font-weight:800}
+.empty{font-size:20px;line-height:1.6;padding:20px;color:var(--muted);white-space:normal}
+#foot{
+  flex:none;height:28px;display:flex;align-items:center;justify-content:flex-end;gap:6px;
+  padding:0 14px;font-size:24px;font-weight:800;color:var(--muted);position:relative;z-index:2;pointer-events:none;
+}
+#foot small{font-size:12px;font-weight:400}
+#probe{position:absolute;visibility:hidden;white-space:nowrap;font-size:100px;font-weight:600;left:-9999px;top:0}
+
+.ov{
+  position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;z-index:20;cursor:auto;
+  padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);
+}
+.ov.open{display:flex}
+.ov header{flex:none;display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-bottom:1px solid var(--rule);font-weight:700;font-size:18px}
+.ov header button,.btn{
+  border:1px solid var(--rule);background:var(--panel);color:var(--ink);font:inherit;font-size:16px;
+  padding:9px 14px;border-radius:6px;cursor:pointer;
+}
+.btn.on,.btn.primary{background:var(--s1);border-color:var(--s1);color:#fff}
+.sheet{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding:8px 16px 30px;user-select:text;-webkit-user-select:text}
+.sheet h3{margin:18px 0 8px;font-size:16px;display:flex;align-items:center;gap:8px}
+.sheet h3 i{display:inline-block;width:14px;height:14px;border-radius:3px;background:var(--c)}
+.sheet p{font-size:14px;line-height:1.6;color:var(--muted);margin:6px 0}
+.rowset{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.val{min-width:3.5em;text-align:center;font-size:18px;font-weight:700}
+.check{font-size:22px;font-weight:800;letter-spacing:.05em}
+.check b{font-size:30px;color:var(--s1)}
+.jumps{display:flex;flex-wrap:wrap;gap:6px}
+.jump{
+  border:0;border-left:6px solid var(--c);background:var(--panel);color:var(--ink);
+  font:inherit;font-size:16px;padding:10px 12px;cursor:pointer;text-align:left;border-radius:3px;
+}
+.jump small{color:var(--muted);font-size:12px;margin-left:6px}
+.jump.here{outline:3px solid var(--c);font-weight:700}
+textarea{
+  width:100%;height:45vh;border:1px solid var(--rule);background:var(--panel);color:var(--ink);
+  font-family:inherit;font-size:14px;line-height:1.5;padding:8px;border-radius:6px;
+}
+.fileBtn input{display:none}
+.status{font-size:14px;color:var(--s1);min-height:1.5em;margin-top:6px}
+#roleView .sheet{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:14px;text-align:center}
+#roleView .big{font-size:24px;padding:18px 34px;min-width:9em}
+</style>
+</head>
+<body>
+<div id="zoneBack"></div><div id="zoneFwd"></div>
+<div id="app">
+  <div id="band">
+    <button type="button" class="mini" id="btnList">見出し</button>
+    <span class="stg" id="stg"></span>
+    <span class="sec" id="sec"></span>
+    <span class="num" id="num"></span>
+    <button type="button" class="mini" id="btnSet">設定</button>
+  </div>
+  <div id="page"><div id="rows"></div></div>
+  <div id="foot"></div>
+</div>
+<span id="probe"></span>
+
+<div class="ov" id="roleView" role="dialog" aria-label="上の台か下の台か">
+  <div class="sheet">
+    <div style="font-size:20px;font-weight:700">このiPhoneの使い方を選んでください</div>
+    <div class="rowset" style="justify-content:center">
+      <button type="button" class="btn big" data-role="single">1台だけで使う<br><small>全部のページ</small></button>
+      <button type="button" class="btn big" data-role="top">2台の上の台<br><small>1・3・5…ページ</small></button>
+      <button type="button" class="btn big" data-role="bottom">2台の下の台<br><small>2・4・6…ページ</small></button>
+    </div>
+    <p>あとから「設定」で変えられます。<br>画面が勝手に消えないよう、iPhoneの「設定」→「画面表示と明るさ」→「自動ロック」を「なし」にしておくと安心です。</p>
+  </div>
+</div>
+
+<div class="ov" id="listView" role="dialog" aria-label="見出し一覧">
+  <header><span>見出し一覧</span><button type="button" data-close>閉じる</button></header>
+  <div class="sheet">
+    <p id="listInfo"></p>
+    <div id="list"></div>
+  </div>
+</div>
+
+<div class="ov" id="setView" role="dialog" aria-label="設定">
+  <header><span>設定</span><button type="button" data-close>閉じる</button></header>
+  <div class="sheet">
+    <h3>2台が同じ台本かの確認</h3>
+    <div class="check" id="checkLine"></div>
+    <p>2台でこの「確認番号」と「総ページ数」が同じなら、同じ台本・同じ切れ目です。<br>
+    本番中は、<b>上下2台のページ番号の差が1なら正しい状態</b>です（例：上5と下4、上5と下6）。</p>
+
+    <h3>この台</h3>
+    <div class="rowset">
+      <button type="button" class="btn" data-setrole="single">1台だけで使う</button>
+      <button type="button" class="btn" data-setrole="top">上の台（奇数ページ）</button>
+      <button type="button" class="btn" data-setrole="bottom">下の台（偶数ページ）</button>
+    </div>
+
+    <h3>台本</h3>
+    <div class="rowset">
+      <button type="button" class="btn" id="btnEdit">台本を入れる・直す</button>
+    </div>
+
+    <h3 id="cutTitle">ページの切り方（2台で同じにしてください）</h3>
+    <div class="rowset">
+      <span>1行の字数</span>
+      <button type="button" class="btn" data-adj="chars" data-d="-1">−</button>
+      <span class="val" id="vChars"></span>
+      <button type="button" class="btn" data-adj="chars" data-d="1">＋</button>
+      <span style="width:16px"></span>
+      <span>1ページの行数</span>
+      <button type="button" class="btn" data-adj="rows" data-d="-1">−</button>
+      <span class="val" id="vRows"></span>
+      <button type="button" class="btn" data-adj="rows" data-d="1">＋</button>
+    </div>
+    <p id="cutNote">字数か行数を変えると、ページの切れ目と確認番号が変わります。</p>
+
+    <h3>見た目（この台だけ）</h3>
+    <div class="rowset">
+      <span>文字の大きさ</span>
+      <button type="button" class="btn" data-adj="scale" data-d="-0.05">小さく</button>
+      <span class="val" id="vScale"></span>
+      <button type="button" class="btn" data-adj="scale" data-d="0.05">大きく</button>
+    </div>
+    <p>100%は、決めた字数と行数がちょうど画面に入る大きさです。100%より大きくすると行の端が切れることがあります。</p>
+    <div class="rowset" style="margin-top:8px">
+      <button type="button" class="btn" data-theme-set="dark">黒地に白い字</button>
+      <button type="button" class="btn" data-theme-set="light">白地に黒い字</button>
+    </div>
+
+    <h3>画面の自動消灯</h3>
+    <p id="wakeInfo">一度ページを送ると、画面が消えないようにします。</p>
+    <p>うまく効かないときは、iPhoneの「設定」→「画面表示と明るさ」→「自動ロック」を「なし」にしてください。</p>
+
+    <h3>キーボードの確認</h3>
+    <p>この画面を開いたままキーを押すと、何のキーとして届いたかがここに出ます。</p>
+    <div class="check" id="keyInfo" style="font-size:18px">（まだ押されていません）</div>
+  </div>
+</div>
+
+<div class="ov" id="editView" role="dialog" aria-label="台本を入れる・直す">
+  <header><span>台本を入れる・直す</span><button type="button" data-close>閉じる</button></header>
+  <div class="sheet">
+    <p>ここに台本を貼り付けるか、直接直して「この台本を使う」を押します。</p>
+    <textarea id="ta" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+    <div class="rowset" style="margin-top:8px">
+      <button type="button" class="btn primary" id="btnUse">この台本を使う</button>
+      <label class="btn fileBtn">ファイルから読む<input type="file" id="file" accept=".md,.txt,text/plain,text/markdown"></label>
+      <button type="button" class="btn" id="btnFetch">置き場所の台本を読み込む</button>
+    </div>
+    <div class="status" id="editStatus"></div>
+    <p>「置き場所の台本を読み込む」は、アプリと一緒に置いた台本（daihon.md）を取り直します。ネットにつながっているときだけ使えます。</p>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+var K={text:"kanpe2:text",role:"kanpe2:role",page:"kanpe2:page",chars:"kanpe2:chars",rows:"kanpe2:rows",scale:"kanpe2:scale",theme:"kanpe2:theme"};
+function load(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+function save(k,v){try{localStorage.setItem(k,String(v));}catch(e){}}
+function num(v,d,lo,hi){var n=parseFloat(v);return (isFinite(n)&&n>=lo&&n<=hi)?n:d;}
+
+K.single="kanpe2:single";
+var S={
+  role:(load(K.role)==="top"||load(K.role)==="bottom"||load(K.role)==="single")?load(K.role):null,
+  single:loadSingle(),
+  chars:Math.round(num(load(K.chars),18,8,40)),
+  rows:Math.round(num(load(K.rows),5,2,10)),
+  scale:num(load(K.scale),1,0.6,1.2),
+  theme:load(K.theme)==="light"?"light":"dark"
+};
+function loadSingle(){
+  var d={land:{chars:20,rows:7},port:{chars:12,rows:14}};
+  try{var o=JSON.parse(load("kanpe2:single")||"null");
+    ["land","port"].forEach(function(k){if(o&&o[k]){
+      d[k].chars=Math.round(num(o[k].chars,d[k].chars,6,40));
+      d[k].rows=Math.round(num(o[k].rows,d[k].rows,2,30));}});
+  }catch(e){}
+  return d;
+}
+function ori(){return window.innerWidth>=window.innerHeight?"land":"port";}
+function isSingle(){return S.role==="single";}
+function dims(){if(isSingle()){var d=S.single[ori()];return {N:d.chars,R:d.rows};}return {N:S.chars,R:S.rows};}
+var builtOri=null;
+var COLORS=["var(--s0)","var(--s1)","var(--s2)","var(--s3)","var(--s4)","var(--s5)","var(--s6)"];
+var text="", secs=[], pages=[], page=0, code="----";
+
+/* ---------- 台本の読み込み ---------- */
+function stageIndex(name){
+  var n=name.replace(/[１-６]/g,function(c){return String("１２３４５６".indexOf(c)+1);});
+  var m=n.match(/([1-6])\s*面/);
+  return m?parseInt(m[1],10):0;
+}
+function trimAll(s){return s.replace(/^[\s　]+|[\s　]+$/g,"");}
+function parse(src){
+  var out=[], stage="", si=0, cur=null;
+  function newSec(name,named){cur={stage:stage,si:si,name:name,named:named,lines:[]};out.push(cur);}
+  src.replace(/\r\n?/g,"\n").split("\n").forEach(function(raw){
+    var line=raw.replace(/~~[\s\S]*?~~/g,"");
+    line=line.replace(/\*\*/g,"").replace(/\\([!-\/:-@\[-`{-~])/g,"$1");
+    line=trimAll(line);
+    if(!line) return;
+    var h=line.match(/^#+\s*(.*)$/);
+    if(h&&/^\s*#/.test(raw)){stage=trimAll(h[1]);si=stageIndex(stage);cur=null;return;}
+    if(line.charAt(0)==="【"){
+      var m=line.match(/^【([^】]*)】?([\s\S]*)$/);
+      newSec(trimAll(m[1]),true);
+      line=trimAll(m[2]);
+      if(!line) return;
+    }
+    if(!cur) newSec("",false);
+    cur.lines.push({text:line,note:/^（[\s\S]*）$/.test(line)});
+  });
+  return out.filter(function(s){return s.lines.length>0;});
+}
+function chars(s){return Array.from(s);}
+function split(arr,n){var r=[];for(var i=0;i<arr.length;i+=n) r.push(arr.slice(i,i+n).join(""));return r;}
+function paginate(list,N,R,noPad){
+  var ps=[];
+  list.forEach(function(sec,idx){
+    sec.first=ps.length+1;
+    var cur=null, used=0;
+    sec.lines.forEach(function(ln,li){
+      var ch=chars(ln.text), need=Math.max(1,Math.ceil(ch.length/N));
+      if(need>R){
+        var n2=Math.ceil(ch.length/R);
+        ps.push({sec:idx,li:li,perRow:n2,lines:[{note:ln.note,parts:split(ch,n2)}]});
+        cur=null;used=0;return;
+      }
+      if(!cur||used+need>R){cur={sec:idx,li:li,perRow:N,lines:[]};ps.push(cur);used=0;}
+      cur.lines.push({note:ln.note,parts:split(ch,N)});used+=need;
+    });
+    if(!noPad&&(ps.length+1-sec.first)%2===1) ps.push({sec:idx,li:sec.lines.length,blank:true});
+    sec.count=ps.length+1-sec.first;
+  });
+  return ps;
+}
+function fnv(str){var h=0x811c9dc5;for(var i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0;}return h>>>0;}
+function makeCode(){
+  var d=dims();
+  var body=JSON.stringify([d.N,d.R,secs.map(function(s){return [s.stage,s.name,s.lines.map(function(l){return l.text;})];})]);
+  return ("000"+(fnv(body)%10000)).slice(-4);
+}
+function curKey(){var p=pages[page-1];return p?{sec:p.sec,li:p.li||0}:null;}
+function rebuild(keep){
+  secs=parse(text);
+  var d=dims();
+  pages=paginate(secs,d.N,d.R,isSingle());
+  builtOri=ori();
+  code=makeCode();
+  if(!pages.length){page=0;return;}
+  if(keep&&secs[keep.sec]){
+    if(isSingle()){
+      page=secs[keep.sec].first;
+      for(var i=0;i<pages.length;i++){var p=pages[i];if(p.sec===keep.sec&&!p.blank&&p.li<=keep.li) page=i+1;}
+    }else page=startOf(keep.sec);
+  }
+}
+function secName(s){return s.named?s.name:(s.stage||"見出しなし");}
+function startOf(i){return secs[i].first+(S.role==="bottom"?1:0);}
+function minPage(){return S.role==="bottom"?2:1;}
+function stepSize(){return isSingle()?1:2;}
+function normalize(){
+  if(!pages.length){page=0;return;}
+  if(!(page>=1&&page<=pages.length)) page=minPage();
+  if(isSingle()){save(K.page,page);return;}
+  if(S.role==="bottom"&&page%2===1) page+=1;
+  if(S.role!=="bottom"&&page%2===0) page-=1;
+  save(K.page,page);
+}
+
+/* ---------- 表示 ---------- */
+var el={app:id("app"),band:id("band"),stg:id("stg"),sec:id("sec"),num:id("num"),page:id("page"),rows:id("rows"),foot:id("foot"),probe:id("probe"),zb:id("zoneBack"),zf:id("zoneFwd")};
+function id(x){return document.getElementById(x);}
+var emRatio=0;
+function measureEm(){
+  el.probe.textContent="国国国国国国国国国国";
+  var w=el.probe.getBoundingClientRect().width;
+  emRatio=w>0?w/1000:1;
+}
+function baseSize(){
+  var cs=getComputedStyle(el.page);
+  var W=el.page.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight);
+  var H=el.page.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom);
+  if(!emRatio) measureEm();
+  var d=dims();
+  var byW=W/(d.N*emRatio), byH=H/(d.R*1.25);
+  return Math.max(8,Math.min(byW,byH));
+}
+function render(){
+  document.documentElement.setAttribute("data-theme",S.theme);
+  el.rows.innerHTML="";
+  if(!pages.length){
+    el.stg.textContent="";el.sec.textContent="台本が入っていません";el.num.textContent="";el.foot.textContent="";
+    var d=document.createElement("div");d.className="empty";
+    d.textContent="右上の「設定」→「台本を入れる・直す」から台本を入れてください。";
+    el.rows.appendChild(d);return;
+  }
+  var p=pages[page-1], sec=secs[p.sec];
+  el.app.style.setProperty("--c",COLORS[sec.si]);
+  el.stg.textContent=sec.stage||"　";
+  el.stg.style.display=sec.stage?"":"none";
+  el.sec.textContent=sec.named?"【"+sec.name+"】":"";
+  el.num.innerHTML="";
+  el.num.appendChild(document.createTextNode(String(page)));
+  var sm=document.createElement("small");sm.textContent="/"+pages.length;el.num.appendChild(sm);
+  var base=baseSize()*S.scale;
+  if(p.blank){
+    var nx=secs[p.sec+1];
+    var b=document.createElement("div");b.className="blank";
+    b.style.fontSize=(base*0.8)+"px";
+    var a=document.createElement("div");a.className="nx";
+    if(nx){a.textContent="次は【"+secName(nx)+"】";a.style.setProperty("--c",COLORS[nx.si]);}
+    else a.textContent="台本はここまでです";
+    var u=document.createElement("div");u.className="up";u.textContent="↑上の画面へ";
+    b.appendChild(a);b.appendChild(u);
+    el.rows.style.fontSize="";el.rows.style.height="100%";
+    el.rows.appendChild(b);
+  }else{
+    el.rows.style.height="";
+    el.rows.style.fontSize=(base*dims().N/p.perRow)+"px";
+    p.lines.forEach(function(ln){
+      ln.parts.forEach(function(t){
+        var r=document.createElement("div");r.className="row"+(ln.note?" note":"");r.textContent=t;
+        el.rows.appendChild(r);
+      });
+    });
+  }
+  el.foot.innerHTML="";
+  el.foot.style.display=isSingle()?"none":"";
+  if(isSingle()) return;
+  var sm2=document.createElement("small");sm2.textContent=S.role==="bottom"?"次は上の画面":"次は下の画面";
+  el.foot.appendChild(sm2);
+  el.foot.appendChild(document.createTextNode(S.role==="bottom"?"↑":"↓"));
+}
+
+/* ---------- 操作 ---------- */
+var lastAct=0;
+function guard(){var t=performance.now();if(lastAct&&t>=lastAct&&t-lastAct<400) return false;lastAct=t;return true;}
+function flash(z){z.classList.add("flash");setTimeout(function(){z.classList.remove("flash");},140);}
+function step(d){
+  if(!pages.length||!guard()) return;
+  flash(d>0?el.zf:el.zb);
+  var np=page+stepSize()*d;
+  if(np<minPage()||np>pages.length) return;
+  page=np;save(K.page,page);render();requestWake();
+}
+el.app.addEventListener("click",function(e){
+  if(e.target.closest("button")) return;
+  if(e.clientX<window.innerWidth*0.15) step(-1); else step(1);
+});
+
+var views={role:id("roleView"),list:id("listView"),set:id("setView"),edit:id("editView")};
+function anyOpen(){for(var k in views){if(views[k].classList.contains("open")) return true;}return false;}
+function open(v){closeAll();views[v].classList.add("open");}
+function closeAll(){for(var k in views) views[k].classList.remove("open");render();}
+Array.prototype.forEach.call(document.querySelectorAll("[data-close]"),function(b){b.addEventListener("click",function(){b.blur();closeAll();});});
+
+/* 役割 */
+function setRole(r){
+  var keep=curKey();
+  S.role=r;save(K.role,r);
+  rebuild(keep);
+  normalize();
+}
+Array.prototype.forEach.call(document.querySelectorAll("[data-role]"),function(b){
+  b.addEventListener("click",function(){setRole(b.getAttribute("data-role"));closeAll();});
+});
+Array.prototype.forEach.call(document.querySelectorAll("[data-setrole]"),function(b){
+  b.addEventListener("click",function(){setRole(b.getAttribute("data-setrole"));fillSet();});
+});
+
+/* 見出し一覧 */
+id("btnList").addEventListener("click",function(){
+  var list=id("list");list.innerHTML="";
+  var curSec=pages.length?pages[page-1].sec:-1, lastStage=null, box=null;
+  secs.forEach(function(s,i){
+    if(s.stage!==lastStage||!box){
+      lastStage=s.stage;
+      var h=document.createElement("h3");h.style.setProperty("--c",COLORS[s.si]);
+      h.appendChild(document.createElement("i"));h.appendChild(document.createTextNode(s.stage||"面の名前なし"));
+      list.appendChild(h);
+      box=document.createElement("div");box.className="jumps";list.appendChild(box);
+    }
+    var b=document.createElement("button");b.type="button";b.className="jump"+(i===curSec?" here":"");
+    b.style.setProperty("--c",COLORS[s.si]);
+    b.appendChild(document.createTextNode(s.named?s.name:"（見出しなし）"));
+    var sm=document.createElement("small");sm.textContent=startOf(i)+"ページ";b.appendChild(sm);
+    b.addEventListener("click",function(){page=startOf(i);normalize();closeAll();requestWake();});
+    box.appendChild(b);
+  });
+  id("listInfo").textContent=isSingle()?"押すと、その見出しの最初のページへ飛びます。":"押すと、その見出しへ飛びます（上の台は1ページ目、下の台は2ページ目）。2台とも同じ見出しを押すと、上から読み直せます。";
+  open("list");
+  var here=list.querySelector(".here");if(here) here.scrollIntoView({block:"center"});
+});
+
+/* 設定 */
+function fillSet(){
+  id("checkLine").innerHTML="";
+  var c=id("checkLine");
+  c.appendChild(document.createTextNode("確認番号 "));
+  var bb=document.createElement("b");bb.textContent=code;c.appendChild(bb);
+  c.appendChild(document.createTextNode("　総ページ数 "+pages.length+"　（"+S.chars+"字×"+S.rows+"行）"));
+  var dd=dims();
+  id("vChars").textContent=dd.N+"字";id("vRows").textContent=dd.R+"行";
+  id("cutTitle").textContent=isSingle()?"ページの切り方（今の向き："+(ori()==="land"?"横":"縦")+"）":"ページの切り方（2台で同じにしてください）";
+  id("cutNote").textContent=isSingle()?"1台で使うときは、縦向きと横向きで別々に覚えます。iPhoneを回すと、読んでいる所を保ったままページを作り直します。":"字数か行数を変えると、ページの切れ目と確認番号が変わります。";id("vScale").textContent=Math.round(S.scale*100)+"%";
+  Array.prototype.forEach.call(document.querySelectorAll("[data-setrole]"),function(b){b.classList.toggle("on",b.getAttribute("data-setrole")===S.role);});
+  Array.prototype.forEach.call(document.querySelectorAll("[data-theme-set]"),function(b){b.classList.toggle("on",b.getAttribute("data-theme-set")===S.theme);});
+}
+id("btnSet").addEventListener("click",function(){fillSet();open("set");});
+Array.prototype.forEach.call(document.querySelectorAll("[data-adj]"),function(b){
+  b.addEventListener("click",function(){
+    var k=b.getAttribute("data-adj"), d=parseFloat(b.getAttribute("data-d"));
+    var keep=curKey();
+    if(isSingle()&&(k==="chars"||k==="rows")){
+      var o=S.single[ori()];
+      if(k==="chars") o.chars=Math.max(6,Math.min(40,o.chars+d)); else o.rows=Math.max(2,Math.min(30,o.rows+d));
+      save(K.single,JSON.stringify(S.single));rebuild(keep);normalize();
+    }
+    else if(k==="chars"){S.chars=Math.max(8,Math.min(40,S.chars+d));save(K.chars,S.chars);rebuild(keep);normalize();}
+    else if(k==="rows"){S.rows=Math.max(2,Math.min(10,S.rows+d));save(K.rows,S.rows);rebuild(keep);normalize();}
+    else {S.scale=Math.round(Math.max(0.6,Math.min(1.2,S.scale+d))*100)/100;save(K.scale,S.scale);}
+    fillSet();
+  });
+});
+Array.prototype.forEach.call(document.querySelectorAll("[data-theme-set]"),function(b){
+  b.addEventListener("click",function(){S.theme=b.getAttribute("data-theme-set");save(K.theme,S.theme);document.documentElement.setAttribute("data-theme",S.theme);fillSet();});
+});
+
+/* 台本の編集 */
+var ta=id("ta"), est=id("editStatus");
+id("btnEdit").addEventListener("click",function(){ta.value=text;est.textContent="";open("edit");});
+function useText(t,msg){
+  var test=parse(t);
+  if(!test.length){est.textContent="表示できる文がありませんでした。中身を確かめてください。";return false;}
+  text=t;save(K.text,t);rebuild(null);page=minPage();normalize();
+  est.textContent=msg+"　総ページ数 "+pages.length+"・確認番号 "+code;
+  return true;
+}
+id("btnUse").addEventListener("click",function(){useText(ta.value,"この台本に入れ替えました。");});
+id("file").addEventListener("change",function(e){
+  var f=e.target.files&&e.target.files[0];if(!f) return;
+  var r=new FileReader();
+  r.onload=function(){ta.value=String(r.result);useText(ta.value,"「"+f.name+"」を読み込みました。");};
+  r.onerror=function(){est.textContent="ファイルを読み込めませんでした。";};
+  r.readAsText(f,"utf-8");e.target.value="";
+});
+function fetchScript(){
+  var ctl=("AbortController" in window)?new AbortController():null;
+  var timer=setTimeout(function(){if(ctl) ctl.abort();},8000);
+  return fetch("daihon.md?t="+Date.now(),{cache:"no-store",signal:ctl?ctl.signal:undefined}).then(function(r){
+    clearTimeout(timer);
+    if(!r.ok) throw new Error("not found");
+    return r.text();
+  });
+}
+id("btnFetch").addEventListener("click",function(){
+  est.textContent="読み込んでいます…";
+  fetchScript().then(function(t){ta.value=t;useText(t,"置き場所の台本を読み込みました。");})
+  .catch(function(){est.textContent="読み込めませんでした。ネットにつながっているか確かめてください。";});
+});
+
+/* キーボード */
+var NEXT={ArrowRight:"→",ArrowDown:"↓"," ":"スペース",Spacebar:"スペース",Enter:"エンター",PageDown:"ページ送り"};
+var BACK={ArrowLeft:"←",ArrowUp:"↑",PageUp:"ページ戻し",Backspace:"バックスペース"};
+document.addEventListener("keydown",function(e){
+  var tg=e.target, typing=tg&&(tg.tagName==="TEXTAREA"||tg.tagName==="INPUT");
+  if(anyOpen()){
+    if(views.set.classList.contains("open")){
+      var k=e.key, name=NEXT[k]?NEXT[k]+"（次へ）":BACK[k]?BACK[k]+"（戻る）":(k+"（使っていないキー）");
+      id("keyInfo").textContent="届いたキー："+name;
+      if(NEXT[k]||BACK[k]) e.preventDefault();
+    }
+    if(e.key==="Escape"&&!typing) closeAll();
+    return;
+  }
+  if(NEXT[e.key]){e.preventDefault();if(!e.repeat) step(1);}
+  else if(BACK[e.key]){e.preventDefault();if(!e.repeat) step(-1);}
+});
+
+/* 画面の自動消灯を止める */
+var wake=null, wakeInfo=id("wakeInfo");
+function requestWake(){
+  if(wake) return;
+  if(!("wakeLock" in navigator)){wakeInfo.textContent="このiPhoneでは、アプリから画面の消灯を止められません。自動ロックを「なし」にしてください。";return;}
+  navigator.wakeLock.request("screen").then(function(w){
+    wake=w;wakeInfo.textContent="今は、画面が自動で消えないようにしています。";
+    w.addEventListener("release",function(){wake=null;});
+  }).catch(function(){wakeInfo.textContent="画面の消灯を止められませんでした。自動ロックを「なし」にしてください。";});
+}
+document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible"&&lastAct) requestWake();});
+
+function onResize(){
+  if(isSingle()&&builtOri!==ori()&&pages.length){rebuild(curKey());normalize();}
+  if(views.set.classList.contains("open")) fillSet();
+  if(!anyOpen()) render();
+}
+window.addEventListener("resize",onResize);
+window.addEventListener("orientationchange",function(){setTimeout(onResize,300);});
+
+/* テスト用の窓口（動作確認で使う） */
+window.__kanpe={parse:parse,paginate:paginate,get pages(){return pages;},get secs(){return secs;},get page(){return page;},get code(){return code;},step:step,useText:useText,setRole:setRole};
+
+/* ---------- はじめ ---------- */
+function start(){
+  rebuild(null);
+  page=parseInt(load(K.page)||"0",10);
+  normalize();
+  measureEm();
+  render();
+  if(!S.role) open("role");
+}
+var saved=load(K.text);
+if(saved!==null){text=saved;start();}
+else{
+  fetchScript().then(function(t){text=t;save(K.text,t);start();})
+  .catch(function(){text="";start();});
+}
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(function(){measureEm();if(!anyOpen()) render();});
+
+if("serviceWorker" in navigator&&location.protocol==="https:"){
+  navigator.serviceWorker.register("sw.js").catch(function(){});
+}
+})();
+</script>
+</body>
+</html>
