@@ -1,10 +1,11 @@
 // ネットがなくても開けるように、アプリのファイルをiPhoneにしまっておく仕組み
-var CACHE = "kanpe2-v2";
-var FILES = ["./", "./index.html", "./daihon.md", "./manifest.webmanifest", "./icon-180.png", "./icon-512.png", "./BIZUDPGothic-Bold.ttf"];
+var CACHE = "kanpe2-v4";
+var FILES = ["./", "./index.html", "./daihon.md", "./manifest.webmanifest", "./icon-180.png", "./icon-512.png"];
 
 self.addEventListener("install", function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) {
-    return Promise.all(FILES.map(function (f) { return c.add(f).catch(function () {}); }));
+    // ブラウザの一時保存（GitHubは10分）を使わず、必ず最新を取る
+    return Promise.all(FILES.map(function (f) { return c.add(new Request(f, { cache: "reload" })).catch(function () {}); }));
   }));
   self.skipWaiting();
 });
@@ -34,7 +35,7 @@ self.addEventListener("fetch", function (e) {
 
   // それ以外：しまってある分をすぐ使い、裏で新しいものに入れ替えておく
   e.respondWith(caches.match(req, { ignoreSearch: true }).then(function (hit) {
-    var net = fetch(req).then(function (r) {
+    var net = fetch(req.url, { cache: "no-cache" }).then(function (r) {
       if (r.ok) { var cp = r.clone(); caches.open(CACHE).then(function (c) { c.put(req, cp); }); }
       return r;
     }).catch(function () { return hit; });
