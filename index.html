@@ -235,6 +235,13 @@ textarea{
     </div>
     <p>文字が角の丸みで欠けないように、角をよけて置いています。端の文字が欠けるときは＋、端まで届いていないときは−にしてください。</p>
     <div class="rowset" style="margin-top:8px">
+      <span>ボタンの列の幅（1台・横向き）</span>
+      <button type="button" class="btn" data-adj="strip" data-d="-2">−</button>
+      <span class="val" id="vStrip"></span>
+      <button type="button" class="btn" data-adj="strip" data-d="2">＋</button>
+    </div>
+    <p>小さくすると、文字が島（画面のふちの黒い部分）の側へ寄って大きくなります。島が文字にかかったら＋にしてください。</p>
+    <div class="rowset" style="margin-top:8px">
       <span>横向きのとき、設定と見出しのボタンの列</span>
       <button type="button" class="btn" data-side="auto">自動（島の側）</button>
       <button type="button" class="btn" data-side="left">いつも左</button>
@@ -412,6 +419,9 @@ function baseSize(){
 /* 1台モード：iPhoneの角の丸みをよけながら、文字をできるだけ大きく・端まで置く */
 K.corner="kanpe2:corner";
 S.corner=Math.round(num(load(K.corner),55,0,90));
+/* 横向きのボタンの列の幅。島（ダイナミックアイランド）の右端より少し広ければよい */
+K.strip="kanpe2:strip";
+S.strip=Math.round(num(load(K.strip),52,30,80));
 function cornerInset(y,H,r){
   if(r<=0) return 0;
   if(y<r){var a=r-y;return r-Math.sqrt(Math.max(0,r*r-a*a));}
@@ -420,7 +430,7 @@ function cornerInset(y,H,r){
 }
 function singleGeom(){
   if(!emRatio) measureEm();
-  var W=window.innerWidth,H=window.innerHeight,r=S.corner,GAP=3,STRIP=8,LH=1.25;
+  var W=window.innerWidth,H=window.innerHeight,r=S.corner,GAP=3,STRIP=3,LH=1.25;
   var pr=el.page.getBoundingClientRect();
   var land=ori()==="land", isl=islandSide();
   var curveL=!(land&&isl==="left"), curveR=!(land&&isl!=="left");
@@ -527,6 +537,7 @@ function islandSide(){
 }
 function layoutClasses(){
   var b=document.body, single=isSingle(), land=ori()==="land", isl=islandSide();
+  document.documentElement.style.setProperty("--sw",S.strip+"px");
   b.classList.toggle("single",single);
   b.classList.toggle("land",land);b.classList.toggle("port",!land);
   b.classList.toggle("isl-left",isl==="left");b.classList.toggle("isl-right",isl!=="left");
@@ -615,6 +626,7 @@ function fillSet(){
   c.appendChild(document.createTextNode("　総ページ数 "+pages.length+"　（"+S.chars+"字×"+S.rows+"行）"));
   var dd=dims();
   id("vCorner").textContent=S.corner;
+  id("vStrip").textContent=S.strip;
   id("vChars").textContent=dd.N+"字";id("vRows").textContent=dd.R+"行";
   id("cutTitle").textContent=isSingle()?"ページの切り方（今の向き："+(ori()==="land"?"横":"縦")+"）":"ページの切り方（2台で同じにしてください）";
   id("cutNote").textContent=isSingle()?"1台で使うときは、縦向きと横向きで別々に覚えます。iPhoneを回すと、読んでいる所を保ったままページを作り直します。":"字数か行数を変えると、ページの切れ目と確認番号が変わります。";id("vScale").textContent=Math.round(S.scale*100)+"%";
@@ -638,6 +650,7 @@ Array.prototype.forEach.call(document.querySelectorAll("[data-adj]"),function(b)
     else if(k==="chars"){S.chars=Math.max(8,Math.min(40,S.chars+d));save(K.chars,S.chars);rebuild(keep);normalize();}
     else if(k==="rows"){S.rows=Math.max(2,Math.min(10,S.rows+d));save(K.rows,S.rows);rebuild(keep);normalize();}
     else if(k==="corner"){S.corner=Math.max(0,Math.min(90,S.corner+d));save(K.corner,S.corner);}
+    else if(k==="strip"){S.strip=Math.max(30,Math.min(80,S.strip+d));save(K.strip,S.strip);}
     else {S.scale=Math.round(Math.max(0.6,Math.min(1.2,S.scale+d))*100)/100;save(K.scale,S.scale);}
     fillSet();
   });
