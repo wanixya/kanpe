@@ -1,6 +1,6 @@
 // ネットがなくても開けるように、アプリのファイルをiPhoneにしまっておく仕組み
-var CACHE = "kanpe2-v1";
-var FILES = ["./", "./index.html", "./daihon.md", "./manifest.webmanifest", "./icon-180.png", "./icon-512.png"];
+var CACHE = "kanpe2-v2";
+var FILES = ["./", "./index.html", "./daihon.md", "./manifest.webmanifest", "./icon-180.png", "./icon-512.png", "./BIZUDPGothic-Bold.ttf"];
 
 self.addEventListener("install", function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) {

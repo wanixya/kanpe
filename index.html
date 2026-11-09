@@ -12,6 +12,12 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>2台カンペ</title>
 <style>
+/* BIZ UDPゴシック（モリサワ、SIL Open Font License 1.1。OFL.txt を同封） */
+@font-face{
+  font-family:"BIZ UDPGothic Kanpe";
+  src:url("BIZUDPGothic-Bold.ttf") format("truetype");
+  font-weight:100 900;font-style:normal;font-display:block;
+}
 :root{
   --bg:#000;--ink:#f2f2f2;--muted:#8c8c8c;--panel:#161616;--rule:#333;
   --zone:rgba(255,255,255,.06);--flash:rgba(255,255,255,.16);
@@ -27,7 +33,7 @@
 *,*::before,*::after{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hidden;overscroll-behavior:none}
 body{
-  font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","Yu Gothic","Meiryo",sans-serif;
+  font-family:"BIZ UDPGothic Kanpe","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","Yu Gothic","Meiryo",sans-serif;
   -webkit-text-size-adjust:100%;-webkit-user-select:none;user-select:none;
   -webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation;
 }
@@ -64,6 +70,47 @@ body{
 }
 #foot small{font-size:12px;font-weight:400}
 #probe{position:absolute;visibility:hidden;white-space:nowrap;font-size:100px;font-weight:600;left:-9999px;top:0}
+
+/* ---- 1台モード：設定と見出しを画面の端の列に置く ---- */
+:root{--sw:max(env(safe-area-inset-left,0px),env(safe-area-inset-right,0px),48px);--isl:71px}
+#side{display:none;position:fixed;z-index:5}
+#side button{
+  position:absolute;border:2px solid var(--rule);background:var(--panel);color:var(--ink);
+  font:inherit;font-weight:700;border-radius:16px;cursor:pointer;padding:0;
+  display:flex;align-items:center;justify-content:center;gap:6px;overflow:hidden;
+}
+#side #sList{border-color:var(--c,var(--s0));background:var(--c,var(--s0));color:#fff}
+#side small{font-size:12px;font-weight:400;opacity:.8}
+body.single #band,body.single #foot{display:none}
+body.single #side{display:block}
+body.single #page{padding:0}
+/* 横向き：島（ダイナミックアイランド）がある側に縦の列 */
+body.single.land #side{top:0;bottom:0;width:var(--sw)}
+body.single.land.isl-left #side{left:0}
+body.single.land.isl-right #side{right:0}
+body.single.land #side button{left:5px;right:5px;writing-mode:vertical-rl;font-size:24px;letter-spacing:.1em}
+body.single.land #sNum{text-orientation:upright;letter-spacing:0;font-size:13px}
+body.single.land #sSet{top:12px;bottom:calc(50% + var(--isl))}
+body.single.land #sList{top:calc(50% + var(--isl));bottom:12px}
+body.single.land.isl-left #app{padding:10px 24px max(env(safe-area-inset-bottom,0px),10px) var(--sw)}
+body.single.land.isl-right #app{padding:10px var(--sw) max(env(safe-area-inset-bottom,0px),10px) 24px}
+/* 縦向き：上に横の列 */
+body.single.port #side{top:0;left:0;right:0;height:calc(env(safe-area-inset-top,0px) + 58px)}
+body.single.port #side button{top:calc(env(safe-area-inset-top,0px) + 6px);bottom:6px;font-size:22px}
+body.single.port #sSet{left:max(env(safe-area-inset-left,0px),10px);right:calc(50% + 5px)}
+body.single.port #sList{left:calc(50% + 5px);right:max(env(safe-area-inset-right,0px),10px)}
+body.single.port #app{padding:calc(env(safe-area-inset-top,0px) + 66px) max(env(safe-area-inset-right,0px),12px) max(env(safe-area-inset-bottom,0px),10px) max(env(safe-area-inset-left,0px),12px)}
+
+/* 見出し一覧（大きく押しやすく） */
+#listView header button{font-size:20px;padding:12px 26px}
+.retryBox{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:6px}
+.retry{
+  border:0;border-radius:12px;background:var(--s5);color:#fff;font:inherit;font-weight:700;
+  font-size:24px;padding:20px 14px;cursor:pointer;text-align:center;line-height:1.3;
+}
+.retry.here{outline:4px solid var(--ink);outline-offset:2px}
+#list .jump{font-size:21px;padding:14px 16px;min-width:6.5em}
+#list .jumps{gap:8px}
 
 .ov{
   position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;z-index:20;cursor:auto;
@@ -113,6 +160,10 @@ textarea{
   </div>
   <div id="page"><div id="rows"></div></div>
   <div id="foot"></div>
+</div>
+<div id="side">
+  <button type="button" id="sSet">設定<small id="sNum"></small></button>
+  <button type="button" id="sList">見出し</button>
 </div>
 <span id="probe"></span>
 
@@ -179,6 +230,13 @@ textarea{
     </div>
     <p>100%は、決めた字数と行数がちょうど画面に入る大きさです。100%より大きくすると行の端が切れることがあります。</p>
     <div class="rowset" style="margin-top:8px">
+      <span>横向きのとき、設定と見出しのボタンの列</span>
+      <button type="button" class="btn" data-side="auto">自動（島の側）</button>
+      <button type="button" class="btn" data-side="left">いつも左</button>
+      <button type="button" class="btn" data-side="right">いつも右</button>
+    </div>
+    <p>「自動」は、iPhoneの向きから島（画面上部の黒い部分）がある側を選びます。うまく合わないときは「左」か「右」に決めてください。</p>
+    <div class="rowset" style="margin-top:8px">
       <button type="button" class="btn" data-theme-set="dark">黒地に白い字</button>
       <button type="button" class="btn" data-theme-set="light">白地に黒い字</button>
     </div>
@@ -226,7 +284,7 @@ var S={
   theme:load(K.theme)==="light"?"light":"dark"
 };
 function loadSingle(){
-  var d={land:{chars:20,rows:7},port:{chars:12,rows:14}};
+  var d={land:{chars:20,rows:7},port:{chars:12,rows:18}};
   try{var o=JSON.parse(load("kanpe2:single")||"null");
     ["land","port"].forEach(function(k){if(o&&o[k]){
       d[k].chars=Math.round(num(o[k].chars,d[k].chars,6,40));
@@ -250,7 +308,7 @@ function stageIndex(name){
 function trimAll(s){return s.replace(/^[\s　]+|[\s　]+$/g,"");}
 function parse(src){
   var out=[], stage="", si=0, cur=null;
-  function newSec(name,named){cur={stage:stage,si:si,name:name,named:named,lines:[]};out.push(cur);}
+  function newSec(name,named){cur={stage:stage,si:si,name:name,named:named,retry:/^やり直し/.test(stage),lines:[]};out.push(cur);}
   src.replace(/\r\n?/g,"\n").split("\n").forEach(function(raw){
     var line=raw.replace(/~~[\s\S]*?~~/g,"");
     line=line.replace(/\*\*/g,"").replace(/\\([!-\/:-@\[-`{-~])/g,"$1");
@@ -313,6 +371,9 @@ function rebuild(keep){
   }
 }
 function secName(s){return s.named?s.name:(s.stage||"見出しなし");}
+/* やり直し用カンペは、そのカンペの中だけで送り戻しする。ふだんの台本の流れからは外す */
+function groupOf(n){var p=pages[n-1];if(!p) return null;return secs[p.sec].retry?"r"+p.sec:"main";}
+function nextMainSec(i){for(var j=i+1;j<secs.length;j++){if(!secs[j].retry) return secs[j];}return null;}
 function startOf(i){return secs[i].first+(S.role==="bottom"?1:0);}
 function minPage(){return S.role==="bottom"?2:1;}
 function stepSize(){return isSingle()?1:2;}
@@ -345,6 +406,7 @@ function baseSize(){
 }
 function render(){
   document.documentElement.setAttribute("data-theme",S.theme);
+  layoutClasses();
   el.rows.innerHTML="";
   if(!pages.length){
     el.stg.textContent="";el.sec.textContent="台本が入っていません";el.num.textContent="";el.foot.textContent="";
@@ -354,6 +416,8 @@ function render(){
   }
   var p=pages[page-1], sec=secs[p.sec];
   el.app.style.setProperty("--c",COLORS[sec.si]);
+  id("side").style.setProperty("--c",sec.retry?"var(--s5)":COLORS[sec.si]);
+  id("sNum").textContent=String(page);
   el.stg.textContent=sec.stage||"　";
   el.stg.style.display=sec.stage?"":"none";
   el.sec.textContent=sec.named?"【"+sec.name+"】":"";
@@ -362,12 +426,12 @@ function render(){
   var sm=document.createElement("small");sm.textContent="/"+pages.length;el.num.appendChild(sm);
   var base=baseSize()*S.scale;
   if(p.blank){
-    var nx=secs[p.sec+1];
+    var nx=sec.retry?null:nextMainSec(p.sec);
     var b=document.createElement("div");b.className="blank";
     b.style.fontSize=(base*0.8)+"px";
     var a=document.createElement("div");a.className="nx";
     if(nx){a.textContent="次は【"+secName(nx)+"】";a.style.setProperty("--c",COLORS[nx.si]);}
-    else a.textContent="台本はここまでです";
+    else a.textContent=sec.retry?"やり直し用はここまでです":"台本はここまでです";
     var u=document.createElement("div");u.className="up";u.textContent="↑上の画面へ";
     b.appendChild(a);b.appendChild(u);
     el.rows.style.fontSize="";el.rows.style.height="100%";
@@ -397,14 +461,40 @@ function flash(z){z.classList.add("flash");setTimeout(function(){z.classList.rem
 function step(d){
   if(!pages.length||!guard()) return;
   flash(d>0?el.zf:el.zb);
-  var np=page+stepSize()*d;
+  var g=groupOf(page), np=page+stepSize()*d;
+  while(np>=minPage()&&np<=pages.length&&groupOf(np)!==g) np+=stepSize()*d;
   if(np<minPage()||np>pages.length) return;
   page=np;save(K.page,page);render();requestWake();
 }
+/* 戻る部分＝文字の部分の左15% */
+function backEdge(){var r=el.page.getBoundingClientRect();return isSingle()?r.left+r.width*0.15:window.innerWidth*0.15;}
 el.app.addEventListener("click",function(e){
   if(e.target.closest("button")) return;
-  if(e.clientX<window.innerWidth*0.15) step(-1); else step(1);
+  if(e.clientX<backEdge()) step(-1); else step(1);
 });
+/* 島（ダイナミックアイランド）がどちらにあるか */
+K.side="kanpe2:side";
+S.side=(load(K.side)==="left"||load(K.side)==="right")?load(K.side):"auto";
+function islandSide(){
+  if(S.side!=="auto") return S.side;
+  var a=(typeof window.orientation==="number")?window.orientation:(screen.orientation&&typeof screen.orientation.angle==="number"?(screen.orientation.angle===270?-90:screen.orientation.angle):90);
+  return a===-90?"right":"left";
+}
+function layoutClasses(){
+  var b=document.body, single=isSingle(), land=ori()==="land", isl=islandSide();
+  b.classList.toggle("single",single);
+  b.classList.toggle("land",land);b.classList.toggle("port",!land);
+  b.classList.toggle("isl-left",isl==="left");b.classList.toggle("isl-right",isl!=="left");
+  /* 戻る部分の色を、文字の部分の左15%に合わせる */
+  if(single){
+    var r=el.page.getBoundingClientRect();
+    el.zb.style.left=r.left+"px";el.zb.style.width=(r.width*0.15)+"px";
+    el.zb.style.top=r.top+"px";el.zb.style.bottom=(window.innerHeight-r.bottom)+"px";
+    el.zf.style.left=(r.left+r.width*0.15)+"px";
+  }else{
+    el.zb.style.left=el.zb.style.width=el.zb.style.top=el.zb.style.bottom=el.zf.style.left="";
+  }
+}
 
 var views={role:id("roleView"),list:id("listView"),set:id("setView"),edit:id("editView")};
 function anyOpen(){for(var k in views){if(views[k].classList.contains("open")) return true;}return false;}
@@ -427,10 +517,26 @@ Array.prototype.forEach.call(document.querySelectorAll("[data-setrole]"),functio
 });
 
 /* 見出し一覧 */
-id("btnList").addEventListener("click",function(){
+function openList(){
   var list=id("list");list.innerHTML="";
   var curSec=pages.length?pages[page-1].sec:-1, lastStage=null, box=null;
+  /* やり直し用カンペを一番上に大きく */
+  var retries=[];secs.forEach(function(s,i){if(s.retry) retries.push(i);});
+  if(retries.length){
+    var rh=document.createElement("h3");rh.style.setProperty("--c","var(--s5)");
+    rh.appendChild(document.createElement("i"));rh.appendChild(document.createTextNode("やり直し用"));
+    list.appendChild(rh);
+    var rb=document.createElement("div");rb.className="retryBox";list.appendChild(rb);
+    retries.forEach(function(i){
+      var s=secs[i], b=document.createElement("button");b.type="button";
+      b.className="retry"+(i===curSec?" here":"");
+      b.textContent=s.named?s.name:s.stage;
+      b.addEventListener("click",function(){page=startOf(i);normalize();closeAll();requestWake();});
+      rb.appendChild(b);
+    });
+  }
   secs.forEach(function(s,i){
+    if(s.retry) return;
     if(s.stage!==lastStage||!box){
       lastStage=s.stage;
       var h=document.createElement("h3");h.style.setProperty("--c",COLORS[s.si]);
@@ -447,8 +553,13 @@ id("btnList").addEventListener("click",function(){
   });
   id("listInfo").textContent=isSingle()?"押すと、その見出しの最初のページへ飛びます。":"押すと、その見出しへ飛びます（上の台は1ページ目、下の台は2ページ目）。2台とも同じ見出しを押すと、上から読み直せます。";
   open("list");
-  var here=list.querySelector(".here");if(here) here.scrollIntoView({block:"center"});
-});
+  /* やり直し用があるときは一番上（やり直し用）を見せる。ないときは今の見出しを見せる */
+  var here=list.querySelector(".jump.here");
+  if(!retries.length&&here) here.scrollIntoView({block:"center"});
+}
+id("btnList").addEventListener("click",openList);
+id("sList").addEventListener("click",function(){this.blur();openList();});
+id("sSet").addEventListener("click",function(){this.blur();fillSet();open("set");});
 
 /* 設定 */
 function fillSet(){
@@ -463,7 +574,11 @@ function fillSet(){
   id("cutNote").textContent=isSingle()?"1台で使うときは、縦向きと横向きで別々に覚えます。iPhoneを回すと、読んでいる所を保ったままページを作り直します。":"字数か行数を変えると、ページの切れ目と確認番号が変わります。";id("vScale").textContent=Math.round(S.scale*100)+"%";
   Array.prototype.forEach.call(document.querySelectorAll("[data-setrole]"),function(b){b.classList.toggle("on",b.getAttribute("data-setrole")===S.role);});
   Array.prototype.forEach.call(document.querySelectorAll("[data-theme-set]"),function(b){b.classList.toggle("on",b.getAttribute("data-theme-set")===S.theme);});
+  Array.prototype.forEach.call(document.querySelectorAll("[data-side]"),function(b){b.classList.toggle("on",b.getAttribute("data-side")===S.side);});
 }
+Array.prototype.forEach.call(document.querySelectorAll("[data-side]"),function(b){
+  b.addEventListener("click",function(){S.side=b.getAttribute("data-side");save(K.side,S.side);fillSet();});
+});
 id("btnSet").addEventListener("click",function(){fillSet();open("set");});
 Array.prototype.forEach.call(document.querySelectorAll("[data-adj]"),function(b){
   b.addEventListener("click",function(){
@@ -548,6 +663,7 @@ function requestWake(){
 document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible"&&lastAct) requestWake();});
 
 function onResize(){
+  if(!started) return;
   if(isSingle()&&builtOri!==ori()&&pages.length){rebuild(curKey());normalize();}
   if(views.set.classList.contains("open")) fillSet();
   if(!anyOpen()) render();
@@ -559,7 +675,9 @@ window.addEventListener("orientationchange",function(){setTimeout(onResize,300);
 window.__kanpe={parse:parse,paginate:paginate,get pages(){return pages;},get secs(){return secs;},get page(){return page;},get code(){return code;},step:step,useText:useText,setRole:setRole};
 
 /* ---------- はじめ ---------- */
+var started=false;
 function start(){
+  started=true;
   rebuild(null);
   page=parseInt(load(K.page)||"0",10);
   normalize();
@@ -573,7 +691,7 @@ else{
   fetchScript().then(function(t){text=t;save(K.text,t);start();})
   .catch(function(){text="";start();});
 }
-if(document.fonts&&document.fonts.ready) document.fonts.ready.then(function(){measureEm();if(!anyOpen()) render();});
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(function(){measureEm();if(started&&!anyOpen()) render();});
 
 if("serviceWorker" in navigator&&location.protocol==="https:"){
   navigator.serviceWorker.register("sw.js").catch(function(){});
