@@ -72,7 +72,6 @@ body{
 #side button{
   position:absolute;border:0;background:var(--sidebtn);cursor:pointer;padding:0;border-radius:14px;
 }
-#side button:active{background:var(--flash)}
 :root{--sidebtn:rgba(255,255,255,.07)}
 :root[data-theme="light"]{--sidebtn:rgba(0,0,0,.06)}
 body.single #band,body.single #foot{display:none}
@@ -81,7 +80,6 @@ body.single #page{padding:0}
 body.single #rows{position:absolute}
 /* 戻る部分の色は付けない（押したときだけ一瞬光る） */
 body.single #zoneBack{background:transparent}
-body.single #zoneBack.flash{background:var(--flash)}
 /* 横向き：島（ダイナミックアイランド）がある側に縦の列 */
 body.single.land #side{top:0;bottom:0;width:var(--sw)}
 body.single.land.isl-left #side{left:0}
@@ -516,7 +514,7 @@ function render(){
 /* ---------- 操作 ---------- */
 var lastAct=0;
 function guard(){var t=performance.now();if(lastAct&&t>=lastAct&&t-lastAct<400) return false;lastAct=t;return true;}
-function flash(z){z.classList.add("flash");setTimeout(function(){z.classList.remove("flash");},140);}
+function flash(z){/* 押したときに光らせない */}
 function step(d){
   if(!pages.length||!guard()) return;
   flash(d>0?el.zf:el.zb);
