@@ -260,6 +260,10 @@ textarea{
     <h3>キーボードの確認</h3>
     <p>この画面を開いたままキーを押すと、何のキーとして届いたかがここに出ます。</p>
     <div class="check" id="keyInfo" style="font-size:18px">（まだ押されていません）</div>
+
+    <h3>ゲームパッドの確認</h3>
+    <p>Yボタンで次へ、Bボタンで戻ります。この画面を開いたままボタンを押すと、何番のボタンとして届いたかが出ます。</p>
+    <div class="check" id="padInfo" style="font-size:18px">（ゲームパッドが見つかっていません）</div>
   </div>
 </div>
 
@@ -693,8 +697,9 @@ id("btnFetch").addEventListener("click",function(){
 });
 
 /* キーボード */
-var NEXT={ArrowRight:"→",ArrowDown:"↓"," ":"スペース",Spacebar:"スペース",Enter:"エンター",PageDown:"ページ送り"};
-var BACK={ArrowLeft:"←",ArrowUp:"↑",PageUp:"ページ戻し",Backspace:"バックスペース"};
+/* テンキーは、NumLockが入っていれば数字・＋−・エンターとして、切れていれば矢印・PageUp/Downとして届く */
+var NEXT={ArrowRight:"→",ArrowDown:"↓"," ":"スペース",Spacebar:"スペース",Enter:"エンター",PageDown:"ページ送り","+":"＋","6":"6","9":"9"};
+var BACK={ArrowLeft:"←",ArrowUp:"↑",PageUp:"ページ戻し",Backspace:"バックスペース","-":"−","4":"4","7":"7"};
 document.addEventListener("keydown",function(e){
   var tg=e.target, typing=tg&&(tg.tagName==="TEXTAREA"||tg.tagName==="INPUT");
   if(anyOpen()){
@@ -709,6 +714,46 @@ document.addEventListener("keydown",function(e){
   if(NEXT[e.key]){e.preventDefault();if(!e.repeat) step(1);}
   else if(BACK[e.key]){e.preventDefault();if(!e.repeat) step(-1);}
 });
+
+/* ゲームパッド（Logicool F310など）：Y＝次へ、B＝戻る */
+/* 標準の配置：0=A 1=B 2=X 3=Y */
+var PAD_NEXT=[3], PAD_BACK=[1], PAD_NAME={0:"A",1:"B",2:"X",3:"Y"};
+var padPrev={}, padRun=false, padInfo=id("padInfo");
+function padNote(g,b){
+  if(!views.set.classList.contains("open")) return;
+  var role=PAD_NEXT.indexOf(b)>=0?"次へ":PAD_BACK.indexOf(b)>=0?"戻る":"使っていないボタン";
+  var t="届いたボタン："+b+"番"+(PAD_NAME[b]?"（"+PAD_NAME[b]+"）":"")+"　→　"+role;
+  if(g.mapping!=="standard") t+="　※配置が標準ではありません。F310の裏のスイッチを「X」にしてください";
+  padInfo.textContent=t;
+}
+function padLoop(){
+  var gps=(navigator.getGamepads?navigator.getGamepads():[])||[], any=false;
+  for(var i=0;i<gps.length;i++){
+    var g=gps[i]; if(!g) continue; any=true;
+    var prev=padPrev[g.index]||[], cur=[];
+    for(var b=0;b<g.buttons.length;b++){
+      var down=!!g.buttons[b].pressed; cur[b]=down;
+      if(down&&!prev[b]){
+        padNote(g,b);
+        if(anyOpen()) continue;
+        if(PAD_NEXT.indexOf(b)>=0) step(1);
+        else if(PAD_BACK.indexOf(b)>=0) step(-1);
+      }
+    }
+    padPrev[g.index]=cur;
+  }
+  if(any) setTimeout(padLoop,30); else padRun=false;
+}
+function padStart(){if(!padRun){padRun=true;setTimeout(padLoop,30);}}
+window.addEventListener("gamepadconnected",function(e){
+  padInfo.textContent="ゲームパッドが見つかりました："+(e.gamepad&&e.gamepad.id||"");
+  padStart();
+});
+window.addEventListener("gamepaddisconnected",function(e){
+  if(e.gamepad) delete padPrev[e.gamepad.index];
+  padInfo.textContent="（ゲームパッドが外れました）";
+});
+padStart();
 
 /* 画面の自動消灯を止める */
 var wake=null, wakeInfo=id("wakeInfo");
